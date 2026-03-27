@@ -9,7 +9,8 @@
       --white:  #feffff;
       --beige:  #dddac9;
       --green:  #6b9e00;
-      --brown:  #a27853;
+      --br
+      own:  #a27853;
       --green-dark: #4e7400;
       --green-light: #eef4e0;
       --brown-light: #f7f0e9;
@@ -514,11 +515,40 @@
 <div class="toast" id="toast"></div>
 
 <script>
+  // ── SUPABASE CONFIG ──
+  const SB_URL = 'https://cmsnoegzksxiebfbsfrd.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNtc25vZWd6a3N4aWViZmJzZnJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1Nzg3NzEsImV4cCI6MjA5MDE1NDc3MX0.32vrKWZ7t8r89fsyCUgz95lmoswjNhdcl0LmpLuioak';
+
+  const SB_HEADERS = {
+    'apikey': SB_KEY,
+    'Authorization': `Bearer ${SB_KEY}`,
+    'Content-Type': 'application/json',
+  };
+
+  async function sbGet(path) {
+    const res = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: SB_HEADERS });
+    return res.json();
+  }
+  async function sbPost(path, data) {
+    const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+      method: 'POST',
+      headers: { ...SB_HEADERS, 'Prefer': 'return=representation' },
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  }
+  async function sbRpc(fn, params) {
+    await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers: SB_HEADERS,
+      body: JSON.stringify(params)
+    });
+  }
+
   // ── STATE ──
   let currentUser = null;
   let currentFilter = '전체';
   let currentPostId = null;
-
 
   const BOARD_META = {
     '전체':    { title: '📋 전체 게시판',   desc: 'Mindlabsion의 모든 게시글을 확인하세요' },
@@ -527,7 +557,6 @@
     '고민상담':{ title: '🫂 고민상담',       desc: '고민을 털어놓고 따뜻한 위로를 받아보세요' },
     '질문':    { title: '❓ Q&A',            desc: '궁금한 점을 질문하고 답변을 받아보세요' },
   };
-
   const BADGE = {
     '공지':    '<span class="post-badge badge-notice">공지</span>',
     '자유':    '<span class="post-badge badge-free">자유</span>',
@@ -535,40 +564,10 @@
     '질문':    '<span class="post-badge badge-qna">Q&A</span>',
   };
 
-  // ── MOCK DATA ──
-  let posts = [
-    { id:1, category:'공지',    title:'Mindlabsion에 오신 걸 환영합니다 🎉', body:'안녕하세요! Mindlabsion은 마음을 나누고 생각을 키우는 커뮤니티입니다.\n\n자유롭게 이야기하고, 고민을 나누며, 서로에게 힘이 되어 주세요.\n\n좋은 커뮤니티를 만들어 나가겠습니다. 감사합니다 🌿', author:'운영진', date:'2026.03.20', views:312, likes:45, hot:true,
-      comments:[
-        { id:1, author:'민준', body:'좋은 커뮤니티 기대합니다!', date:'2026.03.20' },
-        { id:2, author:'서연', body:'잘 부탁드립니다 😊', date:'2026.03.21' },
-      ]
-    },
-    { id:2, category:'고민상담', title:'취업 준비하면서 자존감이 너무 낮아졌어요', body:'계속 서류에서 떨어지다 보니 제가 정말 못난 사람 같다는 생각이 들어요.\n\n친구들은 하나씩 취업이 되는데 저만 뒤처지는 것 같고...\n\n이런 감정 어떻게 극복하셨나요? 아니면 이겨낼 수 있는 방법이 있을까요 😢', author:'취준생123', date:'2026.03.26', views:198, likes:67, hot:true,
-      comments:[
-        { id:1, author:'지훈', body:'저도 비슷한 경험 있었어요. 취업은 타이밍이라고 생각해요. 본인을 너무 탓하지 마세요!', date:'2026.03.26' },
-        { id:2, author:'하늘이', body:'힘내세요 🌱 지금 이 시간도 분명 의미가 있을 거예요. 응원합니다!', date:'2026.03.26' },
-        { id:3, author:'새벽별', body:'저는 그 시기에 운동을 시작했어요. 몸을 움직이다 보면 조금씩 나아지더라고요.', date:'2026.03.27' },
-      ]
-    },
-    { id:3, category:'자유', title:'오늘 점심 뭐 드셨어요? 🍱', body:'저는 오늘 김치찌개 먹었는데 진짜 맛있었어요.\n날씨가 쌀쌀해서인지 국물이 더 당기네요.\n\n여러분은 오늘 점심 뭐 드셨나요? 😋', author:'맛집탐방러', date:'2026.03.27', views:88, likes:22, hot:false,
-      comments:[
-        { id:1, author:'도현', body:'저는 된장찌개요! 역시 한식이 최고 😄', date:'2026.03.27' },
-      ]
-    },
-    { id:4, category:'질문', title:'리액트 useState vs useReducer 언제 써야 하나요?', body:'간단한 상태는 useState로 충분한 것 같은데\n복잡한 상태 로직이 생길 때 useReducer로 넘어가야 하는지 헷갈려요.\n\n실무에서는 어떤 기준으로 선택하시나요?', author:'프론트엔드지망생', date:'2026.03.27', views:134, likes:31, hot:false,
-      comments:[
-        { id:1, author:'시니어개발자K', body:'상태 간 연관이 생기거나 복잡한 트랜지션이 필요하면 useReducer가 낫습니다. 간단한 단일 값은 useState로 충분해요!', date:'2026.03.27' },
-      ]
-    },
-    { id:5, category:'고민상담', title:'친한 친구에게 상처받았어요', body:'오래 사귄 친구가 저한테 뒤에서 험담을 했다는 걸 알게 됐어요.\n직접 따지기도 그렇고, 그냥 모른 척 하기도 억울하고...\n\n어떻게 하면 좋을까요?', author:'익명의봄', date:'2026.03.25', views:221, likes:54, hot:true,
-      comments:[
-        { id:1, author:'수아', body:'솔직하게 이야기하는 게 나중을 위해서도 좋을 것 같아요. 쌓아두면 더 힘들어지더라고요.', date:'2026.03.25' },
-      ]
-    },
-    { id:6, category:'자유', title:'봄이 왔네요 🌸 좋아하는 계절 있으신가요?', body:'창밖에 벚꽃이 피기 시작했어요.\n저는 봄을 제일 좋아하는데, 괜히 설레고 새로운 시작 같은 느낌이 들어서요.\n\n여러분은 어떤 계절을 좋아하시나요?', author:'봄바람', date:'2026.03.27', views:76, likes:18, hot:false,
-      comments:[]
-    },
-  ];
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  }
 
   // ── UTILS ──
   function showPage(id) {
@@ -576,17 +575,18 @@
     document.getElementById(id).classList.add('active');
     if (id === 'page-main') renderPosts();
   }
-
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2500);
   }
-
   function initAvatars() {
     const letter = currentUser ? currentUser[0].toUpperCase() : '?';
     document.querySelectorAll('.nav-avatar').forEach(el => el.textContent = letter);
+  }
+  function setLoading(el, msg = '불러오는 중...') {
+    el.innerHTML = `<div style="text-align:center;padding:60px 0;color:var(--muted);font-size:.9rem;">${msg}</div>`;
   }
 
   // ── AUTH ──
@@ -598,18 +598,14 @@
     currentUser = id;
     initAvatars();
     showPage('page-main');
-    renderPosts();
     showToast(`${id}님, 환영합니다! 🌿`);
   }
-
   function guestLogin() {
     currentUser = '게스트';
     initAvatars();
     showPage('page-main');
-    renderPosts();
     showToast('게스트로 접속했습니다');
   }
-
   function doLogout() {
     currentUser = null;
     document.getElementById('inp-id').value = '';
@@ -617,7 +613,6 @@
     showPage('page-login');
     showToast('로그아웃 되었습니다');
   }
-
 
   // ── BOARD ──
   function filterBoard(cat) {
@@ -629,57 +624,80 @@
     showPage('page-main');
   }
 
-  function renderPosts() {
+  async function renderPosts() {
     const list = document.getElementById('post-list');
-    const filtered = currentFilter === '전체'
-      ? posts
-      : posts.filter(p => p.category === currentFilter);
+    setLoading(list);
 
-    document.getElementById('stat-total').textContent = posts.length;
-    document.getElementById('counsel-cnt').textContent = posts.filter(p=>p.category==='고민상담').length;
+    let query = 'posts?select=*,comments(count)&order=created_at.desc';
+    if (currentFilter !== '전체') {
+      query += `&category=eq.${encodeURIComponent(currentFilter)}`;
+    }
 
-    if (!filtered.length) {
+    const posts = await sbGet(query);
+
+    // 통계
+    const allPosts = currentFilter === '전체' ? posts : await sbGet('posts?select=id,category');
+    const total = Array.isArray(allPosts) ? allPosts.length : 0;
+    document.getElementById('stat-total').textContent = total;
+    const counselData = await sbGet('posts?select=id&category=eq.고민상담');
+    document.getElementById('counsel-cnt').textContent = Array.isArray(counselData) ? counselData.length : 0;
+
+    if (!Array.isArray(posts) || !posts.length) {
       list.innerHTML = '<div style="text-align:center;padding:60px 0;color:var(--muted);font-size:.9rem;">게시글이 없습니다 🍃</div>';
       return;
     }
 
-    list.innerHTML = filtered.map(p => `
-      <div class="post-item" onclick="openPost(${p.id})">
-        <div>${BADGE[p.category]||''}</div>
-        <div class="post-body">
-          <div class="post-title">${p.title}</div>
-          <div class="post-preview">${p.body.replace(/\n/g,' ').substring(0,60)}...</div>
-          <div class="post-meta">
-            <span>👤 ${p.author}</span>
-            <span>🕐 ${p.date}</span>
-            <span>💬 ${p.comments.length}</span>
+    list.innerHTML = posts.map(p => {
+      const commentCount = p.comments?.[0]?.count ?? 0;
+      return `
+        <div class="post-item" onclick="openPost(${p.id})">
+          <div>${BADGE[p.category]||''}</div>
+          <div class="post-body">
+            <div class="post-title">${p.title}</div>
+            <div class="post-preview">${p.body.replace(/\n/g,' ').substring(0,60)}...</div>
+            <div class="post-meta">
+              <span>👤 ${p.author}</span>
+              <span>🕐 ${formatDate(p.created_at)}</span>
+              <span>💬 ${commentCount}</span>
+            </div>
           </div>
-        </div>
-        <div class="post-stat">
-          ${p.hot ? '<span class="hot-badge">HOT</span>' : ''}
-          <span>👁 ${p.views}</span>
-          <span>❤️ ${p.likes}</span>
-        </div>
-      </div>
-    `).join('');
+          <div class="post-stat">
+            ${p.hot ? '<span class="hot-badge">HOT</span>' : ''}
+            <span>👁 ${p.views}</span>
+            <span>❤️ ${p.likes}</span>
+          </div>
+        </div>`;
+    }).join('');
   }
 
   // ── POST DETAIL ──
-  function openPost(id) {
+  async function openPost(id) {
     currentPostId = id;
-    const p = posts.find(x => x.id === id);
-    if (!p) return;
+    showPage('page-detail');
+    window.scrollTo(0, 0);
+    setLoading(document.getElementById('detail-content'), '게시글을 불러오는 중...');
+
+    // 조회수 증가 + 게시글 + 댓글 동시 요청
+    sbRpc('increment_views', { post_id: id });
+    const [posts, comments] = await Promise.all([
+      sbGet(`posts?id=eq.${id}&select=*`),
+      sbGet(`comments?post_id=eq.${id}&order=created_at.asc`)
+    ]);
+
+    const p = posts?.[0];
+    if (!p) { document.getElementById('detail-content').innerHTML = '<p>게시글을 찾을 수 없습니다.</p>'; return; }
     p.views++;
 
     const isCounsel = p.category === '고민상담';
+    const commentsArr = Array.isArray(comments) ? comments : [];
 
-    const commentsHtml = p.comments.length
-      ? p.comments.map(c => `
+    const commentsHtml = commentsArr.length
+      ? commentsArr.map(c => `
           <div class="comment-item">
             <div class="c-top">
               <div class="c-avatar">${c.author[0]}</div>
               <span class="c-name">${c.author}</span>
-              <span class="c-time">${c.date}</span>
+              <span class="c-time">${formatDate(c.created_at)}</span>
             </div>
             <div class="c-body">${c.body}</div>
           </div>`).join('')
@@ -687,87 +705,79 @@
 
     document.getElementById('detail-content').innerHTML = `
       <div class="detail-card">
-        ${isCounsel ? `
-          <div class="counsel-tip">
-            <strong>🫂 고민상담 게시판</strong>
-            이곳은 서로의 고민을 들어주고 따뜻한 말 한마디를 나누는 공간입니다. 비판보다는 공감과 응원을 보내주세요.
-          </div>` : ''}
+        ${isCounsel ? `<div class="counsel-tip"><strong>🫂 고민상담 게시판</strong>이곳은 서로의 고민을 들어주고 따뜻한 말 한마디를 나누는 공간입니다. 비판보다는 공감과 응원을 보내주세요.</div>` : ''}
         <div class="detail-header">
           <div class="d-badge">${BADGE[p.category]||''}</div>
           <h1>${p.title}</h1>
           <div class="detail-info">
             <span>👤 ${p.author}</span>
-            <span>🕐 ${p.date}</span>
+            <span>🕐 ${formatDate(p.created_at)}</span>
             <span>👁 조회 ${p.views}</span>
-            <span>❤️ 좋아요 <span id="like-count">${p.likes}</span></span>
-            <span>💬 댓글 ${p.comments.length}</span>
+            <span>❤️ 좋아요 ${p.likes}</span>
+            <span>💬 댓글 ${commentsArr.length}</span>
           </div>
         </div>
         <div class="detail-body">${p.body}</div>
         <div class="detail-actions">
-          <button class="action-btn" id="like-btn" onclick="toggleLike(${p.id})">❤️ 좋아요 <span id="like-num">${p.likes}</span></button>
+          <button class="action-btn" id="like-btn" onclick="toggleLike(${p.id}, ${p.likes})">❤️ 좋아요 <span id="like-num">${p.likes}</span></button>
           <button class="action-btn" onclick="showToast('URL이 복사되었습니다!')">🔗 공유</button>
         </div>
       </div>
-
       <div class="comment-card">
-        <h3>💬 댓글 ${p.comments.length}개</h3>
+        <h3>💬 댓글 <span id="comment-count">${commentsArr.length}</span>개</h3>
         <div class="comment-list" id="comment-list">${commentsHtml}</div>
         <div class="comment-input-wrap">
           <textarea id="c-input" placeholder="${isCounsel ? '따뜻한 한마디를 남겨주세요 🫂' : '댓글을 입력하세요...'}"></textarea>
-          <div class="c-submit">
-            <button onclick="submitComment(${p.id})">댓글 등록</button>
-          </div>
+          <div class="c-submit"><button onclick="submitComment(${p.id})">댓글 등록</button></div>
         </div>
-      </div>
-    `;
-
-    showPage('page-detail');
-    window.scrollTo(0,0);
+      </div>`;
   }
 
-  function toggleLike(id) {
-    const p = posts.find(x => x.id === id);
-    if (!p) return;
-    p.likes++;
-    document.getElementById('like-num').textContent = p.likes;
+  async function toggleLike(id, currentLikes) {
     const btn = document.getElementById('like-btn');
+    if (btn.classList.contains('liked')) return;
+    await sbRpc('increment_likes', { post_id: id });
+    const newLikes = currentLikes + 1;
+    document.getElementById('like-num').textContent = newLikes;
     btn.classList.add('liked');
+    btn.onclick = null;
     showToast('좋아요를 눌렀습니다 ❤️');
   }
 
-  function submitComment(postId) {
+  async function submitComment(postId) {
     const input = document.getElementById('c-input');
     const body = input.value.trim();
     if (!body) { showToast('댓글을 입력하세요'); return; }
     if (!currentUser || currentUser === '게스트') { showToast('로그인 후 댓글을 작성할 수 있습니다'); return; }
 
-    const p = posts.find(x => x.id === postId);
-    const now = new Date();
-    const date = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+    input.disabled = true;
+    const result = await sbPost('comments', { post_id: postId, author: currentUser, body });
+    input.disabled = false;
 
-    p.comments.push({ id: Date.now(), author: currentUser, body, date });
+    if (!Array.isArray(result) || !result[0]) { showToast('댓글 등록에 실패했습니다'); return; }
+
+    const c = result[0];
     input.value = '';
-
     const cl = document.getElementById('comment-list');
+    // 빈 안내 문구 제거
+    if (cl.querySelector('div[style]')) cl.innerHTML = '';
     cl.innerHTML += `
       <div class="comment-item">
         <div class="c-top">
           <div class="c-avatar">${currentUser[0]}</div>
           <span class="c-name">${currentUser}</span>
-          <span class="c-time">${date}</span>
+          <span class="c-time">${formatDate(c.created_at)}</span>
         </div>
         <div class="c-body">${body}</div>
       </div>`;
+    const cnt = document.getElementById('comment-count');
+    if (cnt) cnt.textContent = parseInt(cnt.textContent) + 1;
     showToast('댓글이 등록되었습니다 🌿');
   }
 
   // ── WRITE ──
   function openWriteModal() {
-    if (!currentUser || currentUser === '게스트') {
-      showToast('로그인 후 글을 작성할 수 있습니다');
-      return;
-    }
+    if (!currentUser || currentUser === '게스트') { showToast('로그인 후 글을 작성할 수 있습니다'); return; }
     document.getElementById('write-modal').classList.add('open');
   }
   function closeWriteModal() {
@@ -776,21 +786,23 @@
     document.getElementById('w-body').value = '';
   }
 
-  function submitPost() {
+  async function submitPost() {
     const title = document.getElementById('w-title').value.trim();
     const body  = document.getElementById('w-body').value.trim();
     const cat   = document.getElementById('w-category').value;
     if (!title) { showToast('제목을 입력하세요'); return; }
     if (!body)  { showToast('내용을 입력하세요'); return; }
 
-    const now = new Date();
-    const date = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+    const btn = document.querySelector('#write-modal .btn-submit');
+    btn.disabled = true;
+    btn.textContent = '등록 중...';
 
-    posts.unshift({
-      id: Date.now(), category: cat, title, body,
-      author: currentUser, date,
-      views: 0, likes: 0, hot: false, comments: []
-    });
+    const result = await sbPost('posts', { category: cat, title, body, author: currentUser });
+    btn.disabled = false;
+    btn.textContent = '등록하기';
+
+    if (!Array.isArray(result) || !result[0]) { showToast('글 등록에 실패했습니다'); return; }
+
     closeWriteModal();
     filterBoard('전체');
     showToast('글이 등록되었습니다! 🌿');
