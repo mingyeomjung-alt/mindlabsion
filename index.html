@@ -94,6 +94,49 @@
     .signup-link a { color: var(--green); font-weight: 600; cursor: pointer; text-decoration: none; }
     .signup-link a:hover { text-decoration: underline; }
 
+    /* ── INPUT VALIDATION STATES ── */
+    .form-group input.valid   { border-color: var(--green); background: #f6fbee; }
+    .form-group input.invalid { border-color: #e53935; background: #fff5f5; }
+    .field-msg {
+      font-size: 0.76rem; margin-top: 5px; padding-left: 2px;
+      display: none;
+    }
+    .field-msg.ok  { color: var(--green); display: block; }
+    .field-msg.err { color: #e53935;      display: block; }
+
+    /* ── STRENGTH BAR ── */
+    .strength-bar { display: flex; gap: 4px; margin-top: 8px; }
+    .strength-bar span {
+      flex: 1; height: 4px; border-radius: 2px;
+      background: var(--border); transition: background .3s;
+    }
+    .strength-bar.s1 span:nth-child(1) { background: #e53935; }
+    .strength-bar.s2 span:nth-child(-n+2) { background: #ff9800; }
+    .strength-bar.s3 span:nth-child(-n+3) { background: var(--green); }
+    .strength-bar.s4 span { background: var(--green-dark); }
+    .strength-label { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── SIGNUP PAGE ── */
+    #page-signup {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #f7f5ee 0%, #e8e4d0 100%);
+      display: none; align-items: flex-start; justify-content: center;
+      padding: 40px 24px;
+    }
+    #page-signup.active { display: flex; }
+    .signup-wrap { width: 100%; max-width: 460px; }
+    .signup-card {
+      background: var(--white);
+      border-radius: 18px;
+      padding: 36px 32px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .signup-card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+    .signup-card .sub { font-size: 0.83rem; color: var(--muted); margin-bottom: 24px; }
+    .signup-divider { height: 1px; background: var(--border); margin: 8px 0 20px; }
+    .back-login { text-align: center; margin-top: 18px; font-size: 0.85rem; color: var(--muted); }
+    .back-login a { color: var(--green); font-weight: 600; cursor: pointer; text-decoration: none; }
+    .back-login a:hover { text-decoration: underline; }
 
     /* ══════════════════════════════
        MAIN LAYOUT (after login)
@@ -411,7 +454,76 @@
       <button class="btn-primary" onclick="doLogin()">로그인</button>
       <div class="login-divider">또는</div>
       <button class="btn-guest" onclick="guestLogin()">👤 게스트로 둘러보기</button>
-      <div class="signup-link">계정이 없으신가요? <a onclick="showToast('회원가입 기능은 준비 중입니다!')">회원가입</a></div>
+      <div class="signup-link">계정이 없으신가요? <a onclick="showPage('page-signup')">회원가입</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ SIGNUP PAGE ══════ -->
+<div id="page-signup" class="page">
+  <div class="signup-wrap">
+    <div class="login-logo">
+      <div class="logo-mark">🌿</div>
+      <h1>Mindlabsion</h1>
+      <p>마음을 나누고, 생각을 키우는 공간</p>
+    </div>
+    <div class="signup-card">
+      <h2>회원가입</h2>
+      <p class="sub">아래 정보를 입력하고 커뮤니티에 참여하세요</p>
+
+      <!-- 아이디 -->
+      <div class="form-group">
+        <label>아이디 *</label>
+        <input type="text" id="s-id" placeholder="영문, 숫자 4~20자"
+          oninput="validateId()" />
+        <div class="field-msg" id="msg-id"></div>
+      </div>
+
+      <!-- 닉네임 -->
+      <div class="form-group">
+        <label>닉네임 *</label>
+        <input type="text" id="s-nick" placeholder="2~12자" oninput="validateNick()" />
+        <div class="field-msg" id="msg-nick"></div>
+      </div>
+
+      <!-- 이메일 -->
+      <div class="form-group">
+        <label>이메일 *</label>
+        <input type="email" id="s-email" placeholder="example@email.com"
+          oninput="validateEmail()" />
+        <div class="field-msg" id="msg-email"></div>
+      </div>
+
+      <div class="signup-divider"></div>
+
+      <!-- 비밀번호 -->
+      <div class="form-group">
+        <label>비밀번호 *</label>
+        <input type="password" id="s-pw" placeholder="영문+숫자+특수문자 8자 이상"
+          oninput="validatePw()" />
+        <div class="strength-bar" id="strength-bar">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="strength-label" id="strength-label"></div>
+        <div class="field-msg" id="msg-pw"></div>
+      </div>
+
+      <!-- 비밀번호 확인 -->
+      <div class="form-group">
+        <label>비밀번호 확인 *</label>
+        <input type="password" id="s-pw2" placeholder="비밀번호를 다시 입력하세요"
+          oninput="validatePw2()" />
+        <div class="field-msg" id="msg-pw2"></div>
+      </div>
+
+      <!-- 한 줄 소개 -->
+      <div class="form-group">
+        <label>한 줄 소개 <span style="font-weight:400;color:var(--muted)">(선택)</span></label>
+        <input type="text" id="s-bio" placeholder="나를 짧게 소개해보세요" maxlength="50" />
+      </div>
+
+      <button class="btn-primary" onclick="doSignup()">가입하기</button>
+      <div class="back-login">이미 계정이 있으신가요? <a onclick="showPage('page-login')">로그인</a></div>
     </div>
   </div>
 </div>
@@ -522,6 +634,14 @@
   let currentFilter = '전체';
   let currentPostId = null;
 
+  // ── USER STORE (localStorage) ──
+  function getUsers() {
+    return JSON.parse(localStorage.getItem('ml_users') || '[]');
+  }
+  function saveUsers(users) {
+    localStorage.setItem('ml_users', JSON.stringify(users));
+  }
+
   const BOARD_META = {
     '전체':    { title: '📋 전체 게시판',   desc: 'Mindlabsion의 모든 게시글을 확인하세요' },
     '공지':    { title: '📢 공지사항',       desc: '운영진의 공지를 확인하세요' },
@@ -594,12 +714,20 @@
   // ── AUTH ──
   function doLogin() {
     const id = document.getElementById('inp-id').value.trim();
+    const pw = document.getElementById('inp-pw').value;
     if (!id) { showToast('아이디를 입력하세요'); return; }
-    currentUser = id;
+    if (!pw)  { showToast('비밀번호를 입력하세요'); return; }
+
+    const users = getUsers();
+    const user = users.find(u => u.id === id);
+    if (!user)         { showToast('존재하지 않는 아이디입니다'); return; }
+    if (user.pw !== pw) { showToast('비밀번호가 올바르지 않습니다'); return; }
+
+    currentUser = user.nick;
     initAvatars();
     showPage('page-main');
     renderPosts();
-    showToast(`${id}님, 환영합니다! 🌿`);
+    showToast(`${user.nick}님, 환영합니다! 🌿`);
   }
 
   function guestLogin() {
@@ -616,6 +744,123 @@
     document.getElementById('inp-pw').value = '';
     showPage('page-login');
     showToast('로그아웃 되었습니다');
+  }
+
+  // ── SIGNUP VALIDATION ──
+  function setField(inputId, msgId, ok, msg) {
+    const inp = document.getElementById(inputId);
+    const el  = document.getElementById(msgId);
+    inp.className = ok ? 'valid' : (msg ? 'invalid' : '');
+    el.textContent = msg;
+    el.className = 'field-msg ' + (ok ? 'ok' : (msg ? 'err' : ''));
+  }
+
+  function validateId() {
+    const v = document.getElementById('s-id').value.trim();
+    const users = getUsers();
+    if (!v) return setField('s-id','msg-id', false, '');
+    if (!/^[a-zA-Z0-9]{4,20}$/.test(v))
+      return setField('s-id','msg-id', false, '영문·숫자 4~20자로 입력하세요');
+    if (users.find(u => u.id === v))
+      return setField('s-id','msg-id', false, '이미 사용 중인 아이디입니다');
+    setField('s-id','msg-id', true, '✓ 사용 가능한 아이디입니다');
+  }
+
+  function validateNick() {
+    const v = document.getElementById('s-nick').value.trim();
+    if (!v) return setField('s-nick','msg-nick', false, '');
+    if (v.length < 2 || v.length > 12)
+      return setField('s-nick','msg-nick', false, '2~12자로 입력하세요');
+    setField('s-nick','msg-nick', true, '✓ 좋아요!');
+  }
+
+  function validateEmail() {
+    const v = document.getElementById('s-email').value.trim();
+    if (!v) return setField('s-email','msg-email', false, '');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))
+      return setField('s-email','msg-email', false, '올바른 이메일 형식이 아닙니다');
+    setField('s-email','msg-email', true, '✓ 확인됐습니다');
+  }
+
+  function pwStrength(pw) {
+    let score = 0;
+    if (pw.length >= 8)              score++;
+    if (/[A-Z]/.test(pw))           score++;
+    if (/[0-9]/.test(pw))           score++;
+    if (/[^A-Za-z0-9]/.test(pw))    score++;
+    return score;
+  }
+
+  function validatePw() {
+    const v = document.getElementById('s-pw').value;
+    const bar   = document.getElementById('strength-bar');
+    const label = document.getElementById('strength-label');
+    if (!v) {
+      bar.className = 'strength-bar';
+      label.textContent = '';
+      return setField('s-pw','msg-pw', false, '');
+    }
+    const score = pwStrength(v);
+    const levels = ['', '약함', '보통', '강함', '매우 강함'];
+    bar.className = 'strength-bar s' + score;
+    label.textContent = levels[score] ? `강도: ${levels[score]}` : '';
+    if (v.length < 8)
+      return setField('s-pw','msg-pw', false, '8자 이상 입력하세요');
+    setField('s-pw','msg-pw', score >= 2, score >= 2 ? '✓ 사용 가능한 비밀번호입니다' : '영문·숫자·특수문자를 조합하면 더 안전해요');
+    validatePw2();
+  }
+
+  function validatePw2() {
+    const pw  = document.getElementById('s-pw').value;
+    const pw2 = document.getElementById('s-pw2').value;
+    if (!pw2) return setField('s-pw2','msg-pw2', false, '');
+    if (pw !== pw2)
+      return setField('s-pw2','msg-pw2', false, '비밀번호가 일치하지 않습니다');
+    setField('s-pw2','msg-pw2', true, '✓ 비밀번호가 일치합니다');
+  }
+
+  function doSignup() {
+    const id    = document.getElementById('s-id').value.trim();
+    const nick  = document.getElementById('s-nick').value.trim();
+    const email = document.getElementById('s-email').value.trim();
+    const pw    = document.getElementById('s-pw').value;
+    const pw2   = document.getElementById('s-pw2').value;
+    const bio   = document.getElementById('s-bio').value.trim();
+
+    // 필수 유효성 재확인
+    if (!id || !/^[a-zA-Z0-9]{4,20}$/.test(id))
+      return showToast('아이디를 올바르게 입력하세요');
+    if (!nick || nick.length < 2 || nick.length > 12)
+      return showToast('닉네임을 올바르게 입력하세요');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return showToast('이메일을 올바르게 입력하세요');
+    if (pw.length < 8)
+      return showToast('비밀번호를 8자 이상 입력하세요');
+    if (pw !== pw2)
+      return showToast('비밀번호가 일치하지 않습니다');
+
+    const users = getUsers();
+    if (users.find(u => u.id === id))
+      return showToast('이미 사용 중인 아이디입니다');
+
+    users.push({ id, nick, email, pw, bio, joinedAt: new Date().toLocaleDateString('ko-KR') });
+    saveUsers(users);
+
+    // 가입 후 로그인 페이지로 이동
+    ['s-id','s-nick','s-email','s-pw','s-pw2','s-bio'].forEach(i => {
+      const el = document.getElementById(i);
+      if (el) { el.value = ''; el.className = ''; }
+    });
+    ['msg-id','msg-nick','msg-email','msg-pw','msg-pw2'].forEach(i => {
+      const el = document.getElementById(i);
+      if (el) { el.textContent = ''; el.className = 'field-msg'; }
+    });
+    document.getElementById('strength-bar').className = 'strength-bar';
+    document.getElementById('strength-label').textContent = '';
+
+    document.getElementById('inp-id').value = id;
+    showPage('page-login');
+    showToast(`${nick}님, 가입을 환영합니다! 🌿 로그인해주세요`);
   }
 
   // ── BOARD ──
